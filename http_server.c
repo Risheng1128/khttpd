@@ -191,12 +191,15 @@ int http_server_daemon(void *arg)
     struct task_struct *worker;
     struct http_server_param *param = (struct http_server_param *) arg;
 
+    // 登記要接收的 signal
     allow_signal(SIGKILL);
     allow_signal(SIGTERM);
 
+    // 判斷執行緒是否該被中止
     while (!kthread_should_stop()) {
         int err = kernel_accept(param->listen_socket, &socket, 0);
         if (err < 0) {
+            // 檢查當前執行緒是否有 signal 發生
             if (signal_pending(current))
                 break;
             pr_err("kernel_accept() error: %d\n", err);
