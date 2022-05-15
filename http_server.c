@@ -185,6 +185,8 @@ static int http_server_worker(void *arg)
         http_parser_execute(&parser, &setting, buf, ret);
         if (request.complete && !http_should_keep_alive(&parser))
             break;
+
+        memset(buf, 0, ret);
     }
     kernel_sock_shutdown(socket, SHUT_RDWR);
     sock_release(socket);
