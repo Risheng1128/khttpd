@@ -145,6 +145,7 @@ static int http_server_worker(void *arg)
 {
     char *buf;
     struct http_parser parser;
+    // 設定 callback function
     struct http_parser_settings setting = {
         .on_message_begin = http_parser_callback_message_begin,
         .on_url = http_parser_callback_request_url,
@@ -166,15 +167,21 @@ static int http_server_worker(void *arg)
     }
 
     request.socket = socket;
+    // 設定 parser 初始參數
     http_parser_init(&parser, HTTP_REQUEST);
     parser.data = &request;
+
+    // 判斷執行緒是否該被中止
     while (!kthread_should_stop()) {
+        // 接收資料
         int ret = http_server_recv(socket, buf, RECV_BUFFER_SIZE - 1);
         if (ret <= 0) {
             if (ret)
                 pr_err("recv error: %d\n", ret);
             break;
         }
+
+        // 解析收到的資料
         http_parser_execute(&parser, &setting, buf, ret);
         if (request.complete && !http_should_keep_alive(&parser))
             break;
