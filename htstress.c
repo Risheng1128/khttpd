@@ -152,7 +152,8 @@ static void init_conn(int efd, struct econn *ec)
     }
 
     struct epoll_event evt = {
-        .events = EPOLLOUT, .data.ptr = ec,
+        .events = EPOLLOUT,
+        .data.ptr = ec,
     };
 
     if (epoll_ctl(efd, EPOLL_CTL_ADD, ec->fd, &evt)) {
@@ -343,12 +344,14 @@ int main(int argc, char *argv[])
     struct addrinfo *result, *rp;
     struct addrinfo hints;
 
+    // SIGINT 發生時，執行函式 signal_exit
     sighandler_t ret = signal(SIGINT, signal_exit);
     if (ret == SIG_ERR) {
         perror("signal(SIGINT, handler)");
         exit(0);
     }
 
+    // SIGTERM 發生時，執行函式 signal_exit
     ret = signal(SIGTERM, signal_exit);
     if (ret == SIG_ERR) {
         perror("signal(SIGTERM, handler)");
@@ -372,6 +375,7 @@ int main(int argc, char *argv[])
 
         switch (next_option) {
         case 'n':
+            // Convert a string to an unsigned quadword integer
             max_requests = strtoull(optarg, 0, 10);
             break;
         case 'c':
@@ -497,6 +501,7 @@ int main(int argc, char *argv[])
 
     ticks = max_requests / 10;
 
+    // SIGINT 發生時，執行函式 sigint_handler
     signal(SIGINT, &sigint_handler);
 
     if (!max_requests) {
@@ -504,6 +509,7 @@ int main(int argc, char *argv[])
         printf("[Press Ctrl-C to finish]\n");
     }
 
+    // 開始計時
     start_time();
 
     /* run test */
