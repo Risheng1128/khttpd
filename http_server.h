@@ -7,7 +7,11 @@ struct http_server_param {
     struct socket *listen_socket;
 };
 
-extern int http_server_daemon(void *arg);
+struct httpd_service {
+    bool is_stopped;
+    struct list_head head;
+};
+extern struct httpd_service daemon_list;
 
 enum {
     TRACE_accept_err = 1,  // accept 失敗總數
@@ -33,4 +37,5 @@ extern struct runtime_state states;
             atomic_add(1, &states.ops); \
     } while (0)
 
+extern int http_server_daemon(void *arg);
 #endif
