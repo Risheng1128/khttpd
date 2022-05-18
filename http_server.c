@@ -65,7 +65,7 @@ static int http_server_send(struct socket *sock, const char *buf, size_t size)
         };
         int length = kernel_sendmsg(sock, &msg, &iov, 1, iov.iov_len);
         if (length < 0) {
-            pr_err("write error: %d\n", length);
+            TRACE(send_err);
             break;
         }
         done += length;
@@ -76,14 +76,16 @@ static int http_server_send(struct socket *sock, const char *buf, size_t size)
 static int http_server_response(struct http_request *request, int keep_alive)
 {
     char *response;
+    int ret;
 
-    pr_info("requested_url = %s\n", request->request_url);
     if (request->method != HTTP_GET)
         response = keep_alive ? HTTP_RESPONSE_501_KEEPALIVE : HTTP_RESPONSE_501;
     else
         response = keep_alive ? HTTP_RESPONSE_200_KEEPALIVE_DUMMY
                               : HTTP_RESPONSE_200_DUMMY;
-    http_server_send(request->socket, response, strlen(response));
+    ret = http_server_send(request->socket, response, strlen(response));
+    if (ret > 0)
+        TRACE(sendmsg);
     return 0;
 }
 
@@ -162,7 +164,7 @@ static int http_server_worker(void *arg)
 
     buf = kmalloc(RECV_BUFFER_SIZE, GFP_KERNEL);
     if (!buf) {
-        pr_err("can't allocate memory!\n");
+        TRACE(kmalloc_err);
         return -1;
     }
 
@@ -177,9 +179,10 @@ static int http_server_worker(void *arg)
         int ret = http_server_recv(socket, buf, RECV_BUFFER_SIZE - 1);
         if (ret <= 0) {
             if (ret)
-                pr_err("recv error: %d\n", ret);
+                TRACE(recv_err);
             break;
-        }
+        } else
+            TRACE(recvmsg);
 
         // 解析收到的資料
         http_parser_execute(&parser, &setting, buf, ret);
@@ -211,12 +214,12 @@ int http_server_daemon(void *arg)
             // 檢查當前執行緒是否有 signal 發生
             if (signal_pending(current))
                 break;
-            pr_err("kernel_accept() error: %d\n", err);
+            TRACE(accept_err);
             continue;
         }
         worker = kthread_run(http_server_worker, socket, KBUILD_MODNAME);
         if (IS_ERR(worker)) {
-            pr_err("can't create more worker process\n");
+            TRACE(cthread_err);
             continue;
         }
     }

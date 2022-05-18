@@ -10,6 +10,7 @@
 
 #define DEFAULT_PORT 8081
 #define DEFAULT_BACKLOG 100
+#define MODULE_NAME "khttpd"
 
 static ushort port = DEFAULT_PORT;
 module_param(port, ushort, S_IRUGO);
@@ -19,6 +20,7 @@ module_param(backlog, ushort, S_IRUGO);
 static struct socket *listen_socket;
 static struct http_server_param param;
 static struct task_struct *http_server;
+struct runtime_state states = {0};
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
 static int set_sock_opt(struct socket *sock,
@@ -80,6 +82,20 @@ static int kernel_setsockopt(struct socket *sock,
     return -EINVAL;
 }
 #endif
+
+static void do_analysis(void)
+{
+    __atomic_thread_fence(__ATOMIC_SEQ_CST);
+#define TRACE_PRINT(ops) \
+    printk(MODULE_NAME ": %s : %d\n", #ops, atomic_read(&states.ops));
+    TRACE_PRINT(recvmsg);
+    TRACE_PRINT(sendmsg);
+    TRACE_PRINT(kmalloc_err);
+    TRACE_PRINT(cthread_err);
+    TRACE_PRINT(send_err);
+    TRACE_PRINT(recv_err);
+    TRACE_PRINT(accept_err);
+}
 
 static inline int setsockopt(struct socket *sock,
                              int level,
@@ -174,6 +190,7 @@ static void __exit khttpd_exit(void)
     send_sig(SIGTERM, http_server, 1);
     kthread_stop(http_server);
     close_listen_socket(listen_socket);
+    do_analysis();
     pr_info("module unloaded\n");
 }
 
