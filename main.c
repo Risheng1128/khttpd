@@ -195,6 +195,7 @@ static void __exit khttpd_exit(void)
     send_sig(SIGTERM, http_server, 1);
     kthread_stop(http_server);
     close_listen_socket(listen_socket);
+    destroy_workqueue(khttpd_wq);
     do_analysis();
     pr_info("module unloaded\n");
 }

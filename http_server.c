@@ -209,7 +209,6 @@ rekmalloc:
         memset(buf, 0, ret);
     }
     kernel_sock_shutdown(worker->socket, SHUT_RDWR);
-    sock_release(worker->socket);
     kfree(buf);
 }
 
