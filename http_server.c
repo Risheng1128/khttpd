@@ -186,7 +186,6 @@ rekmalloc:
         goto rekmalloc;
     }
 
-    // request.socket = socket;
     // 設定 parser 初始參數
     http_parser_init(&parser, HTTP_REQUEST);
     parser.data = &worker->socket;
