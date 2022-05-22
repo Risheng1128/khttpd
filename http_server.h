@@ -14,13 +14,13 @@ struct httpd_service {
 extern struct httpd_service daemon_list;
 
 enum {
-    TRACE_accept_err = 1,  // accept 失敗總數
-    TRACE_cthread_err,     // create thread 失敗總數
-    TRACE_kmalloc_err,     // kmalloc 失敗總數
-    TRACE_recvmsg,         // recvmsg 總數
-    TRACE_sendmsg,         // sendmsg 總數
-    TRACE_send_err,        // send request 失敗總數
-    TRACE_recv_err,        // recv request 失敗總數
+    TRACE_accept_err = 1,  // number of fail acception
+    TRACE_cthread_err,     // number of create thread failed
+    TRACE_kmalloc_err,     // number of fail kmalloc
+    TRACE_recvmsg,         // number of recvmsg
+    TRACE_sendmsg,         // number of sendmsg
+    TRACE_send_err,        // number of send request failed
+    TRACE_recv_err,        // number of recv request failed
 };
 
 struct runtime_state {

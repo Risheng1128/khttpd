@@ -166,7 +166,7 @@ static void http_server_worker(struct work_struct *work)
         container_of(work, struct http_request, khttpd_work);
     char *buf;
     struct http_parser parser;
-    // 設定 callback function
+    // callback function setting
     struct http_parser_settings setting = {
         .on_message_begin = http_parser_callback_message_begin,
         .on_url = http_parser_callback_request_url,
@@ -186,13 +186,13 @@ rekmalloc:
         goto rekmalloc;
     }
 
-    // 設定 parser 初始參數
+    // set the initial parameter of parser
     http_parser_init(&parser, HTTP_REQUEST);
     parser.data = &worker->socket;
 
-    // 判斷執行緒是否該被中止
+    // check the thread should be stop or not
     while (!daemon_list.is_stopped) {
-        // 接收資料
+        // receive data
         int ret = http_server_recv(worker->socket, buf, RECV_BUFFER_SIZE - 1);
         if (ret <= 0) {
             if (ret)
@@ -201,7 +201,7 @@ rekmalloc:
         } else
             TRACE(recvmsg);
 
-        // 解析收到的資料
+        // parse the data received
         http_parser_execute(&parser, &setting, buf, ret);
         if (worker->complete && !http_should_keep_alive(&parser))
             break;
@@ -216,14 +216,13 @@ static struct work_struct *create_work(struct socket *sk)
 {
     struct http_request *work;
 
-    // 分配 http_request 結構大小的空間
-    // GFP_KERNEL: 正常配置記憶體
+    // allocate the size of struct http_request
     if (!(work = kmalloc(sizeof(struct http_request), GFP_KERNEL)))
         return NULL;
 
     work->socket = sk;
 
-    // 初始化已經建立的 work ，並運行函式 http_server_worker
+    // initialize the work which calls the function http_server_worker
     INIT_WORK(&work->khttpd_work, http_server_worker);
 
     list_add(&work->node, &daemon_list.head);
@@ -237,17 +236,17 @@ int http_server_daemon(void *arg)
     struct work_struct *worker;
     struct http_server_param *param = (struct http_server_param *) arg;
 
-    // 登記要接收的 signal
+    // regist the signals
     allow_signal(SIGKILL);
     allow_signal(SIGTERM);
 
     INIT_LIST_HEAD(&daemon_list.head);
 
-    // 判斷執行緒是否該被中止
+    // check the thread should be stop or not
     while (!kthread_should_stop()) {
         int err = kernel_accept(param->listen_socket, &socket, 0);
         if (err < 0) {
-            // 檢查當前執行緒是否有 signal 發生
+            // check there is any signal occurred or not
             if (signal_pending(current))
                 break;
             TRACE(accept_err);
