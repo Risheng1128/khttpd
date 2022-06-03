@@ -281,8 +281,9 @@ rekmalloc:
 
     // check the thread should be stop or not
     while (!daemon_list.is_stopped) {
-        // receive data
-        int ret = http_server_recv(worker->socket, buf, RECV_BUFFER_SIZE - 1);
+        int ret;
+        memset(buf, 0, RECV_BUFFER_SIZE);
+        ret = http_server_recv(worker->socket, buf, RECV_BUFFER_SIZE - 1);
         if (ret <= 0) {
             if (ret)
                 TRACE(recv_err);
