@@ -67,10 +67,8 @@ static void send_http_header(struct socket *socket,
 {
     char buf[SEND_BUFFER_SIZE] = {0};
     snprintf(buf, SEND_BUFFER_SIZE,
-             "HTTP/1.1 %d %s\r\n     \
-                Content-Type: %s\r\n    \
-                Content-Length: %d\r\n  \
-                Connection: %s\r\n\r\n",
+             "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: "
+             "%d\r\nConnection: %s\r\n\r\n",
              status, status_msg, type, length, conn_msg);
     http_server_send(socket, buf, strlen(buf));
 }
@@ -108,9 +106,12 @@ static int tracedir(struct dir_context *dir_context,
         struct http_request *request =
             container_of(dir_context, struct http_request, dir_context);
         char buf[SEND_BUFFER_SIZE] = {0};
+        char *url =
+            !strcmp(request->request_url, "/") ? "" : request->request_url;
 
         snprintf(buf, SEND_BUFFER_SIZE,
-                 "<tr><td><a href=\"%s\">%s</a></td></tr>\r\n", name, name);
+                 "<tr><td><a href=\"%s/%s\">%s</a></td></tr>\r\n", url, name,
+                 name);
         http_server_send(request->socket, buf, strlen(buf));
     }
     return 0;
@@ -125,7 +126,7 @@ static bool handle_directory(struct http_request *request)
     if (request->method != HTTP_GET) {
         send_http_header(request->socket, HTTP_STATUS_NOT_IMPLEMENTED,
                          http_status_str(HTTP_STATUS_NOT_IMPLEMENTED),
-                         "text/plain", 19, "close");
+                         "text/plain", 19, "Close");
         send_http_content(request->socket, "501 Not Implemented");
         return false;
     }
@@ -135,9 +136,8 @@ static bool handle_directory(struct http_request *request)
     if (IS_ERR(fp)) {
         send_http_header(request->socket, HTTP_STATUS_NOT_FOUND,
                          http_status_str(HTTP_STATUS_NOT_FOUND), "text/plain",
-                         14, "close");
+                         13, "Close");
         send_http_content(request->socket, "404 Not Found");
-        kernel_sock_shutdown(request->socket, SHUT_RDWR);
         return false;
     }
 
@@ -158,19 +158,18 @@ static bool handle_directory(struct http_request *request)
 
         snprintf(buf, SEND_BUFFER_SIZE, "</table></body></html>\r\n");
         http_server_send(request->socket, buf, strlen(buf));
+        kernel_sock_shutdown(request->socket, SHUT_RDWR);
 
     } else if (S_ISREG(fp->f_inode->i_mode)) {
         char *read_data = kmalloc(fp->f_inode->i_size, GFP_KERNEL);
         int ret = read_file(fp, read_data);
 
         send_http_header(request->socket, HTTP_STATUS_OK,
-                         http_status_str(HTTP_STATUS_OK), "text/plain",
-                         fp->f_inode->i_size, "close");
+                         http_status_str(HTTP_STATUS_OK), "text/plain", ret,
+                         "Close");
         http_server_send(request->socket, read_data, ret);
-
         kfree(read_data);
     }
-    kernel_sock_shutdown(request->socket, SHUT_RDWR);
     filp_close(fp, NULL);
     return true;
 }
