@@ -10,12 +10,15 @@
 
 #define DEFAULT_PORT 8081
 #define DEFAULT_BACKLOG 100
+#define PATH_SIZE 100
 #define MODULE_NAME "khttpd"
 
 static ushort port = DEFAULT_PORT;
 module_param(port, ushort, S_IRUGO);
 static ushort backlog = DEFAULT_BACKLOG;
 module_param(backlog, ushort, S_IRUGO);
+static char WWWROOT[PATH_SIZE] = {0};
+module_param_string(WWWROOT, WWWROOT, PATH_SIZE, 0);
 
 static struct socket *listen_socket;
 static struct http_server_param param;
@@ -178,6 +181,11 @@ static int __init khttpd_init(void)
         return err;
     }
     param.listen_socket = listen_socket;
+
+    // check WWWROOT is a empty string or not
+    if (!*WWWROOT)
+        WWWROOT[0] = '/';
+    daemon_list.dir_path = WWWROOT;
 
     // create CMWQ
     khttpd_wq = alloc_workqueue(MODULE_NAME, 0, 0);

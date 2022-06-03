@@ -9,6 +9,7 @@ struct http_server_param {
 
 struct httpd_service {
     bool is_stopped;
+    char *dir_path;
     struct list_head head;
 };
 extern struct httpd_service daemon_list;
