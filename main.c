@@ -181,10 +181,6 @@ static int __init khttpd_init(void)
         return err;
     }
     param.listen_socket = listen_socket;
-
-    // check WWWROOT is a empty string or not
-    if (!*WWWROOT)
-        WWWROOT[0] = '/';
     daemon_list.dir_path = WWWROOT;
 
     // create CMWQ
