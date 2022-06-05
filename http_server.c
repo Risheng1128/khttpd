@@ -6,6 +6,7 @@
 
 #include "http_parser.h"
 #include "http_server.h"
+#include "mime_type.h"
 
 #define RECV_BUFFER_SIZE 4096
 #define SEND_BUFFER_SIZE 256
@@ -138,9 +139,10 @@ static bool handle_directory(struct http_request *request)
         char *read_data = kmalloc(fp->f_inode->i_size, GFP_KERNEL);
         int ret = read_file(fp, read_data);
 
-        SEND_HTTP_MSG(request->socket, buf, "%s%s%s%d%s", "HTTP/1.1 200 OK\r\n",
-                      "Content-Type: text/plain\r\n", "Content-Length: ", ret,
-                      "\r\nConnection: Close\r\n\r\n");
+        SEND_HTTP_MSG(
+            request->socket, buf, "%s%s%s%s%d%s", "HTTP/1.1 200 OK\r\n",
+            "Content-Type: ", get_mime_str(request->request_url),
+            "\r\nContent-Length: ", ret, "\r\nConnection: Close\r\n\r\n");
         http_server_send(request->socket, read_data, ret);
         kfree(read_data);
     }
