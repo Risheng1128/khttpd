@@ -83,16 +83,15 @@ static int tracedir(struct dir_context *dir_context,
                     u64 ino,
                     unsigned int d_type)
 {
-    if (strcmp(name, ".") && strcmp(name, "..")) {
+    if (strcmp(name, ".")) {
         struct http_request *request =
             container_of(dir_context, struct http_request, dir_context);
         char buf[SEND_BUFFER_SIZE] = {0};
-        char *url =
-            !strcmp(request->request_url, "/") ? "" : request->request_url;
 
         SEND_HTTP_MSG(request->socket, buf,
                       "%lx\r\n<tr><td><a href=\"%s/%s\">%s</a></td></tr>\r\n",
-                      34 + strlen(url) + (namelen << 1), url, name, name);
+                      34 + strlen(request->request_url) + (namelen << 1),
+                      request->request_url, name, name);
     }
     return 0;
 }
@@ -170,6 +169,9 @@ static int http_parser_callback_request_url(http_parser *parser,
                                             size_t len)
 {
     struct http_request *request = parser->data;
+    // if requst is "..", remove last character
+    if (p[len - 1] == '/')
+        len--;
     strncat(request->request_url, p, len);
     return 0;
 }
@@ -213,8 +215,6 @@ static int http_parser_callback_message_complete(http_parser *parser)
 static void free_work(void)
 {
     struct http_request *l, *tar;
-    /* cppcheck-suppress uninitvar */
-
     list_for_each_entry_safe (tar, l, &daemon_list.head, node) {
         kernel_sock_shutdown(tar->socket, SHUT_RDWR);
         flush_work(&tar->khttpd_work);
@@ -269,10 +269,9 @@ rekmalloc:
         http_parser_execute(&parser, &setting, buf, ret);
         if (worker->complete && !http_should_keep_alive(&parser))
             break;
-
-        memset(buf, 0, ret);
     }
     kernel_sock_shutdown(worker->socket, SHUT_RDWR);
+    sock_release(worker->socket);
     kfree(buf);
 }
 
