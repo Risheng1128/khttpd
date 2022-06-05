@@ -141,7 +141,7 @@ static bool handle_directory(struct http_request *request)
         SEND_HTTP_MSG(request->socket, buf, "%s%s%s%d%s", "HTTP/1.1 200 OK\r\n",
                       "Content-Type: text/plain\r\n", "Content-Length: ", ret,
                       "\r\nConnection: Close\r\n\r\n");
-        http_server_send(request->socket, read_data, strlen(read_data));
+        http_server_send(request->socket, read_data, ret);
         kfree(read_data);
     }
     filp_close(fp, NULL);
