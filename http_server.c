@@ -97,39 +97,41 @@ static int tracedir(struct dir_context *dir_context,
     return 0;
 }
 
-static bool handle_directory(struct http_request *request)
+static bool handle_directory(struct http_request *request, int keep_alive)
 {
     struct file *fp;
     char buf[SEND_BUFFER_SIZE] = {0}, pwd[BUFFER_SIZE] = {0};
+    char *conn = keep_alive ? "Keep-Alive" : "Close";
 
-    request->dir_context.actor = tracedir;
     if (request->method != HTTP_GET) {
-        SEND_HTTP_MSG(request->socket, buf, "%s%s%s%s%s",
+        SEND_HTTP_MSG(request->socket, buf, "%s%s%s%s%s%s",
                       "HTTP/1.1 501 Not Implemented\r\n",
                       "Content-Type: text/plain\r\n", "Content-Length: 19\r\n",
-                      "Connection: Close\r\n\r\n", "501 Not Implemented");
+                      "Connection: ", conn, "\r\n\r\n501 Not Implemented");
         return false;
     }
 
     catstr(pwd, daemon_list.dir_path, request->request_url);
     fp = filp_open(pwd, O_RDONLY, 0);
     if (IS_ERR(fp)) {
-        SEND_HTTP_MSG(request->socket, buf, "%s%s%s%s%s",
+        SEND_HTTP_MSG(request->socket, buf, "%s%s%s%s%s%s",
                       "HTTP/1.1 404 Not Found\r\n",
                       "Content-Type: text/plain\r\n", "Content-Length: 13\r\n",
-                      "Connection: Close\r\n\r\n", "404 Not Found");
+                      "Connection: ", conn, "\r\n\r\n404 Not Found");
         return false;
     }
 
     if (S_ISDIR(fp->f_inode->i_mode)) {
-        SEND_HTTP_MSG(request->socket, buf, "%s%s%s", "HTTP/1.1 200 OK\r\n",
-                      "Content-Type: text/html\r\n",
-                      "Transfer-Encoding: chunked\r\n\r\n");
+        SEND_HTTP_MSG(request->socket, buf, "%s%s%s%s%s%s",
+                      "HTTP/1.1 200 OK\r\n", "Content-Type: text/html\r\n",
+                      "Transfer-Encoding: chunked\r\n", "Connection: ", conn,
+                      "\r\n\r\n");
         SEND_HTTP_MSG(
             request->socket, buf, "7B\r\n%s%s%s%s", "<html><head><style>\r\n",
             "body{font-family: monospace; font-size: 15px;}\r\n",
             "td {padding: 1.5px 6px;}\r\n", "</style></head><body><table>\r\n");
 
+        request->dir_context.actor = tracedir;
         iterate_dir(fp, &request->dir_context);
 
         SEND_HTTP_MSG(request->socket, buf, "%s",
@@ -140,9 +142,9 @@ static bool handle_directory(struct http_request *request)
         int ret = read_file(fp, read_data);
 
         SEND_HTTP_MSG(
-            request->socket, buf, "%s%s%s%s%d%s", "HTTP/1.1 200 OK\r\n",
+            request->socket, buf, "%s%s%s%s%d%s%s%s", "HTTP/1.1 200 OK\r\n",
             "Content-Type: ", get_mime_str(request->request_url),
-            "\r\nContent-Length: ", ret, "\r\nConnection: Close\r\n\r\n");
+            "\r\nContent-Length: ", ret, "\r\nConnection: ", conn, "\r\n\r\n");
         http_server_send(request->socket, read_data, ret);
         kfree(read_data);
     }
@@ -152,7 +154,7 @@ static bool handle_directory(struct http_request *request)
 
 static int http_server_response(struct http_request *request, int keep_alive)
 {
-    if (handle_directory(request) > 0)
+    if (handle_directory(request, keep_alive) > 0)
         TRACE(sendmsg);
     return 0;
 }
