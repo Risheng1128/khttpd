@@ -311,12 +311,11 @@ int http_server_daemon(void *arg)
 
     // check the thread should be stop or not
     while (!kthread_should_stop()) {
-        int err = kernel_accept(param->listen_socket, &socket, 0);
+        int err = kernel_accept(param->listen_socket, &socket, SOCK_NONBLOCK);
         if (err < 0) {
             // check there is any signal occurred or not
             if (signal_pending(current))
                 break;
-            TRACE(accept_err);
             continue;
         }
 

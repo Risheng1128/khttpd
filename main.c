@@ -99,7 +99,6 @@ static void do_analysis(void)
     TRACE_PRINT(cthread_err);
     TRACE_PRINT(send_err);
     TRACE_PRINT(recv_err);
-    TRACE_PRINT(accept_err);
 }
 
 static inline int setsockopt(struct socket *sock,

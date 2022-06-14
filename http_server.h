@@ -15,20 +15,18 @@ struct httpd_service {
 extern struct httpd_service daemon_list;
 
 enum {
-    TRACE_accept_err = 1,  // number of fail acception
-    TRACE_cthread_err,     // number of create thread failed
-    TRACE_kmalloc_err,     // number of fail kmalloc
-    TRACE_recvmsg,         // number of recvmsg
-    TRACE_sendmsg,         // number of sendmsg
-    TRACE_send_err,        // number of send request failed
-    TRACE_recv_err,        // number of recv request failed
+    TRACE_cthread_err = 1,  // number of create thread failed
+    TRACE_kmalloc_err,      // number of fail kmalloc
+    TRACE_recvmsg,          // number of recvmsg
+    TRACE_sendmsg,          // number of sendmsg
+    TRACE_send_err,         // number of send request failed
+    TRACE_recv_err,         // number of recv request failed
 };
 
 struct runtime_state {
-    atomic_t accept_err, cthread_err;
-    atomic_t kmalloc_err, recvmsg;
-    atomic_t sendmsg, send_err;
-    atomic_t recv_err;
+    atomic_t cthread_err, kmalloc_err;
+    atomic_t recvmsg, sendmsg;
+    atomic_t send_err, recv_err;
 };
 extern struct runtime_state states;
 
