@@ -4,9 +4,9 @@
 #include <linux/sched/signal.h>
 #include <linux/tcp.h>
 
-#include "http_parser.h"
 #include "http_server.h"
 #include "mime_type.h"
+#include "timer.h"
 
 #define RECV_BUFFER_SIZE 4096
 #define SEND_BUFFER_SIZE 256
@@ -17,16 +17,6 @@
     http_server_send(socket, buf, strlen(buf))
 
 extern struct workqueue_struct *khttpd_wq;
-
-struct http_request {
-    struct socket *socket;
-    enum http_method method;
-    char request_url[128];
-    int complete;
-    struct dir_context dir_context;
-    struct list_head node;
-    struct work_struct khttpd_work;
-};
 
 static int http_server_recv(struct socket *sock, char *buf, size_t size)
 {
@@ -257,6 +247,9 @@ rekmalloc:
     http_parser_init(&parser, HTTP_REQUEST);
     parser.data = &worker->socket;
 
+    // add timer to manage connection
+    http_add_timer(worker, TIMEOUT_DEFAULT, kernel_sock_shutdown);
+
     // check the thread should be stop or not
     while (!daemon_list.is_stopped) {
         int ret;
@@ -309,9 +302,14 @@ int http_server_daemon(void *arg)
 
     INIT_LIST_HEAD(&daemon_list.head);
 
+    // initial timer to manage connect
+    http_timer_init();
+
     // check the thread should be stop or not
     while (!kthread_should_stop()) {
         int err = kernel_accept(param->listen_socket, &socket, SOCK_NONBLOCK);
+
+        handle_expired_timers();
         if (err < 0) {
             // check there is any signal occurred or not
             if (signal_pending(current))
