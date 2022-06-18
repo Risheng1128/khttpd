@@ -18,7 +18,6 @@ void handle_expired_timers(void);
 bool http_add_timer(struct http_request *req,
                     size_t timeout,
                     timer_callback cb);
-void http_del_timer(struct http_request *req);
 void http_free_timer(void);
 
 #endif
