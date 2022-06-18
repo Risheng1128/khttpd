@@ -178,7 +178,7 @@ static int timer_comp(void *ti, void *tj)
 static prio_queue_t timer;
 static atomic_t current_msec;
 
-static void http_time_update(void)
+static void current_time_update(void)
 {
     struct timespec64 tv;
     ktime_get_ts64(&tv);  // get current time
@@ -189,7 +189,7 @@ void http_timer_init(void)
 {
     if (!prio_queue_init(&timer, timer_comp, PQ_DEFAULT_SIZE))
         return;
-    http_time_update();
+    current_time_update();
 }
 
 void handle_expired_timers(void)
@@ -197,7 +197,7 @@ void handle_expired_timers(void)
     while (!prio_queue_is_empty(&timer)) {
         timer_node_t *node;
 
-        http_time_update();
+        current_time_update();
         node = prio_queue_min(&timer);
 
         if (node->key > atomic_read(&current_msec))
@@ -214,14 +214,23 @@ bool http_add_timer(struct http_request *req, size_t timeout, timer_callback cb)
     if (!node)
         return false;
 
-    http_time_update();
+    current_time_update();
     req->timer_item = node;
     node->key = atomic_read(&current_msec) + timeout;
+    node->pos = atomic_read(&timer.nalloc) + 1;
     node->callback = cb;
     node->socket = req->socket;
 
     prio_queue_insert(&timer, node);
     return true;
+}
+
+void http_timer_update(timer_node_t *node, size_t timeout)
+{
+    current_time_update();
+    node->key = atomic_read(&current_msec) + timeout;
+    // update new position
+    node->pos = prio_queue_sink(&timer, node->pos);
 }
 
 void http_free_timer(void)

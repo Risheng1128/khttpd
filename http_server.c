@@ -153,7 +153,7 @@ static int http_parser_callback_message_begin(http_parser *parser)
 {
     struct http_request *request = parser->data;
     struct socket *socket = request->socket;
-    memset(request, 0x00, sizeof(struct http_request));
+    memset(request->request_url, 0, 128);
     request->socket = socket;
     return 0;
 }
@@ -263,9 +263,13 @@ rekmalloc:
             TRACE(recvmsg);
 
         // parse the data received
-        http_parser_execute(&parser, &setting, buf, ret);
+        if (!http_parser_execute(&parser, &setting, buf, ret))
+            continue;
+
         if (worker->complete && !http_should_keep_alive(&parser))
             break;
+
+        http_timer_update(worker->timer_item, TIMEOUT_DEFAULT);
     }
     kernel_sock_shutdown(worker->socket, SHUT_RDWR);
     kfree(buf);
