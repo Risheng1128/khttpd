@@ -24,6 +24,14 @@ htstress: htstress.c
 check: all
 	@scripts/test.sh
 
+trace: all
+	sudo rmmod khttpd.ko
+	sudo insmod khttpd.ko
+	sh trace.sh
+
+distrace:
+	echo nop > /sys/kernel/debug/tracing/current_tracer
+
 clean:
 	make -C $(KDIR) M=$(PWD) clean
 	$(RM) htstress
