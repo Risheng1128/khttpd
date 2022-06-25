@@ -25,8 +25,8 @@ check: all
 	@scripts/test.sh
 
 trace: all
-	sudo rmmod khttpd.ko
-	sudo insmod khttpd.ko
+	-@sudo rmmod khttpd.ko
+	-@sudo insmod khttpd.ko
 	sh trace.sh
 
 distrace:
