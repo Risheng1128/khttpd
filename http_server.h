@@ -28,7 +28,7 @@ struct http_request {
 
 enum {
     TRACE_cthread_err = 1,  // number of create thread failed
-    TRACE_kmalloc_err,      // number of fail kmalloc
+    TRACE_kzalloc_err,      // number of fail kmalloc
     TRACE_recvmsg,          // number of recvmsg
     TRACE_sendmsg,          // number of sendmsg
     TRACE_send_err,         // number of send request failed
@@ -36,7 +36,7 @@ enum {
 };
 
 struct runtime_state {
-    atomic_t cthread_err, kmalloc_err;
+    atomic_t cthread_err, kzalloc_err;
     atomic_t recvmsg, sendmsg;
     atomic_t send_err, recv_err;
 };
