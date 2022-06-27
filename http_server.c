@@ -236,11 +236,11 @@ static void http_server_worker(struct work_struct *work)
     allow_signal(SIGKILL);
     allow_signal(SIGTERM);
 
-rekmalloc:
-    buf = kmalloc(RECV_BUFFER_SIZE, GFP_KERNEL);
+rekzalloc:
+    buf = kzalloc(RECV_BUFFER_SIZE, GFP_KERNEL);
     if (!buf) {
-        TRACE(kmalloc_err);
-        goto rekmalloc;
+        TRACE(kzalloc_err);
+        goto rekzalloc;
     }
 
     // set the initial parameter of parser
@@ -252,9 +252,7 @@ rekmalloc:
 
     // check the thread should be stop or not
     while (!daemon_list.is_stopped) {
-        int ret;
-        memset(buf, 0, RECV_BUFFER_SIZE);
-        ret = http_server_recv(worker->socket, buf, RECV_BUFFER_SIZE - 1);
+        int ret = http_server_recv(worker->socket, buf, RECV_BUFFER_SIZE - 1);
         if (ret <= 0) {
             if (ret)
                 TRACE(recv_err);
@@ -270,6 +268,7 @@ rekmalloc:
             break;
 
         http_timer_update(worker->timer_item, TIMEOUT_DEFAULT);
+        memset(buf, 0, RECV_BUFFER_SIZE);
     }
     kernel_sock_shutdown(worker->socket, SHUT_RDWR);
     kfree(buf);

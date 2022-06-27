@@ -96,7 +96,7 @@ static void do_analysis(void)
     printk(MODULE_NAME ": %s : %d\n", #ops, atomic_read(&states.ops));
     TRACE_PRINT(recvmsg);
     TRACE_PRINT(sendmsg);
-    TRACE_PRINT(kmalloc_err);
+    TRACE_PRINT(kzalloc_err);
     TRACE_PRINT(cthread_err);
     TRACE_PRINT(send_err);
     TRACE_PRINT(recv_err);
